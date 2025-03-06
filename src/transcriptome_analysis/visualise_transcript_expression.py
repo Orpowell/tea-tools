@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import csv
+import logging
+import sys
 
 def load_transcript_list(transcripts: str) -> list[str]:
     with open(transcripts) as file:
@@ -19,7 +21,8 @@ def load_transcript_quantification(quants: str) -> dict[str, float]:
 
 
 
-def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False):
+def visualise_transcripts_expression(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False, percentage: float = 0.25, percentage_colour: str = "ffa500"):
+
     transcript_list = load_transcript_list(transcripts=transcripts)
 
     transcript_quants = load_transcript_quantification(quants=quantification)
@@ -28,18 +31,24 @@ def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:s
 
     transcript_tpms = list(transcripts_of_interest.values())
 
-    q75 = np.quantile(transcript_tpms, 0.75)
+    if (percentage > 1) or (percentage < 0):
+        logging.error(f" percentage ({percentage}) must be between 0 and 1.")
+        sys.exit(1)
+
+    lower = (1-percentage)
+
+    lower_quartile = np.quantile(transcript_tpms, lower)
 
     counts, bins = np.histogram(transcript_tpms, bins=150, )
 
     colours = []
 
     for bin in bins:
-        if bin < q75:
+        if bin < lower_quartile:
             colours.append("grey")
         
         else:
-            colours.append("orange")
+            colours.append(f"#{percentage_colour}")
 
     fig, ax = plt.subplots()
 
@@ -54,15 +63,26 @@ def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:s
     # graph customization
     ax.set_xlabel('Transcripts Per Million TPM')  # Set the label for the x-axis
     ax.set_ylabel('Frequency')  # Set the label for the y-axis
-    ax.spines['bottom'].set_position(('data', -5))
+    ax.spines['bottom'].set_position(('data', 0))
     #ax.set_ylim(-5, max(counts))
-    ax.set_xlim(-2,)
+    ax.set_xlim(0,)
     ax.spines[['right', 'top']].set_visible(False)
 
 
     # Annotate Transcripts of interest on histogram, using aliases if provided
 
     gene_names = dict(zip(genes_of_interest, genes_of_interest))
+
+    if len(genes_of_interest) != len(aliases):
+        logging.error(f" alias ({len(aliases)}) and transcript-of-interest ({len(genes_of_interest)}) lists are not the same length!")
+        logging.info("Shutting down...")
+        sys.exit(1)
+    
+    for gene in genes_of_interest:
+        if gene not in transcript_list:
+            logging.error(f" {gene} is not in the list of transcripts...")
+            logging.info("Shutting down...")
+            sys.exit(1)
 
     if len(genes_of_interest) == len(aliases):
         gene_names = dict(zip(genes_of_interest, aliases))
@@ -80,9 +100,9 @@ def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:s
         i+=50
 
     # Plot figure legend
-    b75 = mpatches.Patch(color='grey', label='Bottom 75%')
-    t25 = mpatches.Patch(color='orange', label='Top 25%')
-    plt.legend(handles=[t25, b75], title="NLR Expression")
+    bottom = mpatches.Patch(color='grey', label=f'Bottom {lower*100}%')
+    top = mpatches.Patch(color=f'#{percentage_colour}', label=f'Top {percentage*100}%')
+    plt.legend(handles=[top, bottom], title="NLR Expression")
     
     # Plot and save final figure @ 300 DPI
     plt.tight_layout()
@@ -93,38 +113,12 @@ def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:s
         plt.show()
 
         
-
+"""
 if __name__ == "__main__":
     
-    visualise_nlr_transcripts(transcripts="/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TA1675_beta_finger_trancripts.txt", 
-                              quantification="/home/powellor/Documents/projects/r_gene_expression_david/analysis/TA1675/TA1675_quantification/quant.sf", 
-                              graph_out="TA1675_cloned_r_genes.png", 
-                              genes_of_interest=["TRINITY_DN857_c1_g1_i2", "TRINITY_DN2349_c0_g2_i1", "TRINITY_DN305_c0_g1_i41"],
-                              aliases=["Lr39", "WTK4_1", "WTK4_2"],
-                              show=True
-                              )      
 
-    """
     #visualise_nlr_transcripts(transcripts=nlr_transcripts, quantification=quantification, gene_name="Yr28", graph_out="Yr28_expression.png", gene_quant=10.195096)
     #visualise_nlr_transcripts(transcripts=nlr_transcripts, quantification=quantification, gene_name="Sr46", graph_out="Sr46_TRINITY_DN1954_c0_g1_i12_expression.png", gene_quant=15.449350)
-
-    visualise_nlr_transcripts(transcripts="/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TA1675_beta_finger_trancripts.txt", 
-                              quantification="/home/powellor/Documents/projects/r_gene_expression_david/analysis/TA1675/TA1675_quantification/quant.sf", 
-                              graph_out="TA1675_cloned_r_genes.png", 
-                              genes_of_interest=["TRINITY_DN857_c1_g1_i2", "TRINITY_DN2349_c0_g2_i1", "TRINITY_DN305_c0_g1_i41"],
-                              aliases=["Lr39", "WTK4_1", "WTK4_2"]
-                              )     
-
-
-
-    # Cloned KFPs in TA1675 
-    visualise_nlr_transcripts(transcripts="/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TA1675_beta_finger_trancripts.txt", 
-                              quantification="/home/powellor/Documents/projects/r_gene_expression_david/analysis/TA1675/TA1675_quantification/quant.sf", 
-                              graph_out="TA1675_cloned_r_genes.png", 
-                              genes_of_interest=["TRINITY_DN857_c1_g1_i2", "TRINITY_DN2349_c0_g2_i1", "TRINITY_DN305_c0_g1_i41"],
-                              aliases=["Lr39", "WTK4_1", "WTK4_2"]
-                              )    
-
 
     TOWWC054
     transcripts = "/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TOWWC054_NLR_trancripts.txt"
