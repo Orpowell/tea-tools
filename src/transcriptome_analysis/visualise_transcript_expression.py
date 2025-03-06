@@ -23,17 +23,36 @@ def load_transcript_quantification(quants: str) -> dict[str, float]:
 
 def visualise_transcripts_expression(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False, percentage: float = 0.25, percentage_colour: str = "ffa500"):
 
+    if (percentage > 1) or (percentage < 0):
+        logging.error(f" percentage ({percentage}) must be between 0 and 1.")
+        sys.exit(1)
+    
+    if len(genes_of_interest) != len(aliases):
+        logging.error(f" alias ({len(aliases)}) and transcript-of-interest ({len(genes_of_interest)}) lists are not the same length!")
+        logging.info("Shutting down...")
+        sys.exit(1)
+    
+    if len(percentage_colour) != 6:
+        logging.error(f" hexadecimal code must contain 6 characters not {len(percentage_colour)}")
+        sys.exit(1)
+    
+    if not percentage_colour.isalnum():
+        logging.error(" hexadecimal code can only contain numbers and letters...")
+        sys.exit(1)
+    
     transcript_list = load_transcript_list(transcripts=transcripts)
+
+    for gene in genes_of_interest:
+        if gene not in transcript_list:
+            logging.error(f" {gene} is not in the list of transcripts...")
+            logging.info("Shutting down...")
+            sys.exit(1)
 
     transcript_quants = load_transcript_quantification(quants=quantification)
     
     transcripts_of_interest = {k:v for k,v in transcript_quants.items() if k in transcript_list}
 
     transcript_tpms = list(transcripts_of_interest.values())
-
-    if (percentage > 1) or (percentage < 0):
-        logging.error(f" percentage ({percentage}) must be between 0 and 1.")
-        sys.exit(1)
 
     lower = (1-percentage)
 
@@ -70,24 +89,11 @@ def visualise_transcripts_expression(transcripts: str, quantification: str, grap
 
 
     # Annotate Transcripts of interest on histogram, using aliases if provided
-
     gene_names = dict(zip(genes_of_interest, genes_of_interest))
-
-    if len(genes_of_interest) != len(aliases):
-        logging.error(f" alias ({len(aliases)}) and transcript-of-interest ({len(genes_of_interest)}) lists are not the same length!")
-        logging.info("Shutting down...")
-        sys.exit(1)
-    
-    for gene in genes_of_interest:
-        if gene not in transcript_list:
-            logging.error(f" {gene} is not in the list of transcripts...")
-            logging.info("Shutting down...")
-            sys.exit(1)
 
     if len(genes_of_interest) == len(aliases):
         gene_names = dict(zip(genes_of_interest, aliases))
     
-
     i = 50
     for gene in genes_of_interest:
 
