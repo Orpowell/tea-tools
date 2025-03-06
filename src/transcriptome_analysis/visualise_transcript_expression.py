@@ -1,11 +1,9 @@
-import pandas as pd
-from Bio import SeqIO
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import csv
 
-def load_nlr_transcripts(transcripts: str) -> list[str]:
+def load_transcript_list(transcripts: str) -> list[str]:
     with open(transcripts) as file:
         return [line.strip() for line in file]
 
@@ -20,18 +18,19 @@ def load_transcript_quantification(quants: str) -> dict[str, float]:
         return {row[0]:float(row[3]) for row in reader }
 
 
-def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str]):
-    nlrs = load_nlr_transcripts(transcripts=transcripts)
+
+def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False):
+    transcript_list = load_transcript_list(transcripts=transcripts)
 
     transcript_quants = load_transcript_quantification(quants=quantification)
     
-    nlrs = {k:v for k,v in transcript_quants.items() if k in nlrs}
+    transcripts_of_interest = {k:v for k,v in transcript_quants.items() if k in transcript_list}
 
-    nlr_tpm = list(nlrs.values())
+    transcript_tpms = list(transcripts_of_interest.values())
 
-    q75 = np.quantile(nlr_tpm, 0.75)
+    q75 = np.quantile(transcript_tpms, 0.75)
 
-    counts, bins = np.histogram(nlr_tpm, bins=150, )
+    counts, bins = np.histogram(transcript_tpms, bins=150, )
 
     colours = []
 
@@ -61,8 +60,7 @@ def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:s
     ax.spines[['right', 'top']].set_visible(False)
 
 
-    b75 = mpatches.Patch(color='grey', label='Bottom 75%')
-    t25 = mpatches.Patch(color='orange', label='Top 25%')
+    # Annotate Transcripts of interest on histogram, using aliases if provided
 
     gene_names = dict(zip(genes_of_interest, genes_of_interest))
 
@@ -73,59 +71,39 @@ def visualise_nlr_transcripts(transcripts: str, quantification: str, graph_out:s
     i = 50
     for gene in genes_of_interest:
 
-
-        
-        
-        ax.annotate(fr'{gene_names[gene]}', xy=(transcript_quants[gene], 1), xytext=(i, i), textcoords='offset points',
-                        arrowprops=dict(arrowstyle='-|>', color='black'), style='italic')
+        ax.annotate(fr'{gene_names[gene]}',
+                    xy=(transcript_quants[gene], 1), 
+                    xytext=(i, i), 
+                    textcoords='offset points',
+                    arrowprops=dict(arrowstyle='-|>', color='black'), 
+                    style='italic')
         i+=50
 
+    # Plot figure legend
+    b75 = mpatches.Patch(color='grey', label='Bottom 75%')
+    t25 = mpatches.Patch(color='orange', label='Top 25%')
     plt.legend(handles=[t25, b75], title="NLR Expression")
+    
+    # Plot and save final figure @ 300 DPI
     plt.tight_layout()
     plt.savefig(f"{graph_out}", dpi=300)
-    plt.show()
 
+    # Show if toggled on
+    if show:
+        plt.show()
 
-      # Extract top25
-def get_top25(transcripts: str, transcriptome: str, quantification: str, basename: str) -> None: 
-    nlrs = load_nlr_transcripts(transcripts=transcripts)
-    records = SeqIO.parse(open(transcriptome), "fasta")
-
-    nlr_transcripts = {record.id : record.seq for record in records if record.id in nlrs}
-
-    with open(f"{basename}_transcripts.fna", "w+") as out:
-        for name, seq in nlr_transcripts.items():
-            out.write(f">{name}\n")
-            out.write(f"{seq}\n")
-
-    df = pd.read_csv(quantification, sep="\t")
-    nlrs_df = df[(df.Name.isin(nlrs))]
-
-    print(nlrs_df.describe())
-
-    q75 = np.quantile(nlrs_df.TPM, 0.75)
-
-    print(q75)
-
-    nlrs_top_25 = nlrs_df[nlrs_df.TPM >= q75]
-
-    top25nlrs=nlrs_top_25.Name.to_list()
-
-    records = SeqIO.parse(open(transcriptome), "fasta")
-    nlrs_top_25_transcripts = {record.id : record.seq for record in records if record.id in top25nlrs}
-
-    print(nlrs_top_25_transcripts)
-
-    with open(f"{basename}_transcripts.top25.fna", "w+") as out:
-        for name, seq in nlrs_top_25_transcripts.items():
-            out.write(f">{name}\n")
-            out.write(f"{seq}\n")
-  
         
 
 if __name__ == "__main__":
     
-    
+    visualise_nlr_transcripts(transcripts="/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TA1675_beta_finger_trancripts.txt", 
+                              quantification="/home/powellor/Documents/projects/r_gene_expression_david/analysis/TA1675/TA1675_quantification/quant.sf", 
+                              graph_out="TA1675_cloned_r_genes.png", 
+                              genes_of_interest=["TRINITY_DN857_c1_g1_i2", "TRINITY_DN2349_c0_g2_i1", "TRINITY_DN305_c0_g1_i41"],
+                              aliases=["Lr39", "WTK4_1", "WTK4_2"],
+                              show=True
+                              )      
+
     """
     #visualise_nlr_transcripts(transcripts=nlr_transcripts, quantification=quantification, gene_name="Yr28", graph_out="Yr28_expression.png", gene_quant=10.195096)
     #visualise_nlr_transcripts(transcripts=nlr_transcripts, quantification=quantification, gene_name="Sr46", graph_out="Sr46_TRINITY_DN1954_c0_g1_i12_expression.png", gene_quant=15.449350)
