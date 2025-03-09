@@ -3,7 +3,7 @@ import os
 import sys
 from __init__ import __version__
 from visualise_transcript_expression import visualise_transcripts_expression
-from get_transcript_subset import extract_by_expression, extract_by_id
+from extract_transcripts import extract_by_expression, extract_by_id
 
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
