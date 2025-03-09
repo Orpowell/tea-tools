@@ -18,6 +18,7 @@ def main():
 
     sub_parsers = parser.add_subparsers(dest="command")
 
+    # Versioning
     parser.add_argument(
         '-v',
         '--version', 
@@ -25,6 +26,29 @@ def main():
         version='%(prog)s {version}'.format(version=__version__)
     )
 
+    # sequence extraction related parameters
+
+    extractor_parent_parser = argparse.ArgumentParser(add_help=False)
+
+    extractor_parent_parser.add_argument(
+        '-l',
+        '--transcript-list',
+        metavar='\b', 
+        type=lambda x: is_valid_file(parser, x),
+        help="List of transcripts",
+        required=True,
+    )
+
+    extractor_parent_parser.add_argument(
+        '-t',
+        '--transcriptome',
+        metavar='\b', 
+        type=lambda x: is_valid_file(parser, x),
+        help="Transcriptome",
+        required=True,
+    )
+
+    # Expression related parameters
     quantification_parent_parser = argparse.ArgumentParser(add_help=False)
 
     quantification_parent_parser.add_argument(
@@ -45,12 +69,10 @@ def main():
         help="Transcript quantification values",
         required=True,
     )
-    
-    visualiser_parser = sub_parsers.add_parser("visualise", parents=[quantification_parent_parser])
 
-    ##############
-    # Visualiser #
-    ##############
+    # Visualiser command and specific parameters
+
+    visualiser_parser = sub_parsers.add_parser("visualise", parents=[quantification_parent_parser])
 
     visualiser_parser.add_argument(
         '-l',
@@ -107,30 +129,10 @@ def main():
         help="Show graph upon creation (creates a new window)"
     ) 
 
-    # Extractor parent
-
-    extractor_parent_parser = argparse.ArgumentParser(add_help=False)
-
-    extractor_parent_parser.add_argument(
-        '-l',
-        '--transcript-list',
-        metavar='\b', 
-        type=lambda x: is_valid_file(parser, x),
-        help="List of transcripts",
-        required=True,
-    )
-
-    extractor_parent_parser.add_argument(
-        '-t',
-        '--transcriptome',
-        metavar='\b', 
-        type=lambda x: is_valid_file(parser, x),
-        help="Transcriptome",
-        required=True,
-    )
-
+    # Extract-by-id command
     sub_parsers.add_parser("extract-by-id", parents=[extractor_parent_parser])
 
+    # Extract-by-threshold command
     sub_parsers.add_parser("extract-by-threshold", parents=[extractor_parent_parser, quantification_parent_parser])
 
     if len(sys.argv) == 1:
