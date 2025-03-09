@@ -1,6 +1,0 @@
-*.png
-*.txt
-*.fna
-*.hmm*
-tmp/
-src/transcriptome_analysis/__pycache__/
