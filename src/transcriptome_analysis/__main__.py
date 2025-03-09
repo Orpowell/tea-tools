@@ -1,9 +1,9 @@
 import argparse
 import os
 import sys
-from __init__ import __version__
-from visualise_transcript_expression import visualise_transcripts_expression
-from extract_transcripts import extract_by_expression, extract_by_id
+from .__init__ import __version__
+from .visualise_transcript_expression import visualise_transcripts_expression
+from .extract_transcripts import extract_by_expression, extract_by_id
 
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
@@ -14,7 +14,7 @@ def is_valid_file(parser, arg):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="Transcript Analysis Toolkit")
+    parser = argparse.ArgumentParser(prog="Transcript Expression Analysis (T.E.A) Tools")
 
     sub_parsers = parser.add_subparsers(dest="command")
 
