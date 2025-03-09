@@ -6,6 +6,7 @@ import logging
 import sys
 
 def load_transcript_list(transcripts: str) -> list[str]:
+    
     with open(transcripts) as file:
         return [line.strip() for line in file]
 
@@ -83,7 +84,6 @@ def visualise_transcripts_expression(transcripts: str, quantification: str, grap
     ax.set_xlabel('Transcripts Per Million TPM')  # Set the label for the x-axis
     ax.set_ylabel('Frequency')  # Set the label for the y-axis
     ax.spines['bottom'].set_position(('data', 0))
-    #ax.set_ylim(-5, max(counts))
     ax.set_xlim(0,)
     ax.spines[['right', 'top']].set_visible(False)
 

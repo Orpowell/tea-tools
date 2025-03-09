@@ -3,6 +3,7 @@ import os
 import sys
 from __init__ import __version__
 from visualise_transcript_expression import visualise_transcripts_expression
+from get_transcript_subset import extract_by_expression, extract_by_id
 
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
@@ -17,29 +18,26 @@ def main():
 
     sub_parsers = parser.add_subparsers(dest="command")
 
-    visualiser = sub_parsers.add_parser("visualise")
-
-
-    #############
-    # Visualiser #
-    #############
-    visualiser.add_argument(
+    parser.add_argument(
         '-v',
         '--version', 
         action='version', 
         version='%(prog)s {version}'.format(version=__version__)
     )
 
-    visualiser.add_argument(
-        '-l',
-        '--transcripts-list',
-        metavar='\b', 
-        type=lambda x: is_valid_file(parser, x),
-        help="List of transcripts",
+    quantification_parent_parser = argparse.ArgumentParser(add_help=False)
+
+    quantification_parent_parser.add_argument(
+        "-p",
+        "--percentage",
+        metavar='\b',
+        default=0.25,
+        type=float,
         required=True,
+        help="Fraction of top percent coloured between 0.0-1.0 (default: 0.25)"
     )
 
-    visualiser.add_argument(
+    quantification_parent_parser.add_argument(
         '-q',
         '--quantification',
         metavar='\b', 
@@ -47,8 +45,23 @@ def main():
         help="Transcript quantification values",
         required=True,
     )
+    
+    visualiser_parser = sub_parsers.add_parser("visualise", parents=[quantification_parent_parser])
 
-    visualiser.add_argument(
+    ##############
+    # Visualiser #
+    ##############
+
+    visualiser_parser.add_argument(
+        '-l',
+        '--transcript-list',
+        metavar='\b', 
+        type=lambda x: is_valid_file(parser, x),
+        help="List of transcripts",
+        required=True,
+    )
+
+    visualiser_parser.add_argument(
         '-o',
         '--output', 
         metavar='\b',
@@ -57,7 +70,7 @@ def main():
         required=True,
     )
 
-    visualiser.add_argument(
+    visualiser_parser.add_argument(
         '-i',
         '--transcripts-of-interest', 
         metavar='\b',
@@ -67,7 +80,7 @@ def main():
         required=False,
     )
 
-    visualiser.add_argument(
+    visualiser_parser.add_argument(
         '-a',
         '--aliases', 
         metavar='\b',
@@ -77,19 +90,9 @@ def main():
         required=False,
     )
 
-    visualiser.add_argument(
-        "-p",
-        "--percentage",
-        metavar='\b',
-        default=0.25,
-        type=float,
-        required=False,
-        help="Fraction of top percent coloured between 0.0-1.0 (default: 0.25)"
-    )
-
-    visualiser.add_argument(
-        "-pc",
-        "--percentage-colour",
+    visualiser_parser.add_argument(
+        "-c",
+        "--colour",
         metavar='\b',
         default="ffa500",
         type=str,
@@ -97,13 +100,39 @@ def main():
         help="Hexadecimal code to colour the top percentage of transcripts (default: ffa500 [orange])."
     )  
 
-    visualiser.add_argument(
+    visualiser_parser.add_argument(
         "-s",
         "--show", 
         action="store_true", 
         help="Show graph upon creation (creates a new window)"
     ) 
-        
+
+    # Extractor parent
+
+    extractor_parent_parser = argparse.ArgumentParser(add_help=False)
+
+    extractor_parent_parser.add_argument(
+        '-l',
+        '--transcript-list',
+        metavar='\b', 
+        type=lambda x: is_valid_file(parser, x),
+        help="List of transcripts",
+        required=True,
+    )
+
+    extractor_parent_parser.add_argument(
+        '-t',
+        '--transcriptome',
+        metavar='\b', 
+        type=lambda x: is_valid_file(parser, x),
+        help="Transcriptome",
+        required=True,
+    )
+
+    sub_parsers.add_parser("extract-by-id", parents=[extractor_parent_parser])
+
+    sub_parsers.add_parser("extract-by-threshold", parents=[extractor_parent_parser, quantification_parent_parser])
+
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -113,15 +142,29 @@ def main():
     if args.command == "visualise":
 
         visualise_transcripts_expression(
-            transcripts=args.transcripts_list,
+            transcripts=args.transcript_list,
             quantification=args.quantification,
             graph_out=args.output,
             aliases=args.aliases,
             genes_of_interest=args.transcripts_of_interest,
             show=args.show,
             percentage=args.percentage,
-            percentage_colour=args.percentage_colour
+            percentage_colour=args.colour
         )
+    
+    if args.command == "extract-by-id":
+        extract_by_id(transcripts=args.transcript_list,
+                      transcriptome=args.transcriptome)
+    
+    if args.command == "extract-by-threshold":
+
+        extract_by_expression(transcripts=args.transcript_list,
+                              transcriptome=args.transcriptome,
+                              quantification=args.quantification,
+                              top_percentage=args.percentage,
+                              )
+
+    
 
 
 if __name__ == "__main__":
