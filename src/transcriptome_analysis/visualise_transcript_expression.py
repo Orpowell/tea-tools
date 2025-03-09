@@ -94,6 +94,10 @@ def visualise_transcripts_expression(transcripts: str, quantification: str, grap
     if len(genes_of_interest) == len(aliases):
         gene_names = dict(zip(genes_of_interest, aliases))
     
+    for k,v in gene_names.items():
+        if v == "_":
+            gene_names[k] = k
+    
     i = 50
     for gene in genes_of_interest:
 
