@@ -3,3 +3,4 @@
 *.fna
 *.hmm*
 tmp/
+src/transcriptome_analysis/__pycache__/
