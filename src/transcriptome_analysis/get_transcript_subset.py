@@ -20,11 +20,11 @@ def extract_by_id(transcripts: str, transcriptome: str):
     # Load transcript list
     transcripts_list = load_transcripts(transcripts=transcripts)
 
-    # Extract sequences for transcripts from transcriptome
-    transcripts_of_interest = {record.id : record.seq for record in transcriptome if record.id in transcripts_list}
-        
     # Load transcriptome 
     transcriptome = SeqIO.parse(open(transcriptome), "fasta")
+
+    # Extract sequences for transcripts from transcriptome
+    transcripts_of_interest = {record.id : record.seq for record in transcriptome if record.id in transcripts_list}
 
     # Write extracted sequences to output
     write_transcripts(transcriptome=transcripts_of_interest)
@@ -36,10 +36,12 @@ def extract_by_expression(transcripts: str, transcriptome: str, quantification: 
 
     # Load transcript quantification
     df = pd.read_csv(quantification, sep="\t")
+
+    # Get expression levels for transcripts in list provided
     transcripts_df = df[(df.Name.isin(transcripts_list))]
 
     # Find threshold for top X% of transcripts
-    threshold = np.quantile(transcripts_df.TPM, top_percentage)
+    threshold = np.quantile(transcripts_df.TPM, (1-top_percentage))
 
     # Filter for transcripts greater than or equal to threshold
     top_transcripts = transcripts_df[transcripts_df.TPM >= threshold]
@@ -51,7 +53,7 @@ def extract_by_expression(transcripts: str, transcriptome: str, quantification: 
     transcriptome = SeqIO.parse(open(transcriptome), "fasta")
 
     # Extract sequences of transcripts above threshold
-    top_transcript_sequences = {record.id : record.seq for record in transcripts_list if record.id in top_transcript_ids}
+    top_transcript_sequences = {record.id : record.seq for record in transcriptome if record.id in top_transcript_ids}
 
     # Write extracted sequences to output
     write_transcripts(transcriptome=top_transcript_sequences)
