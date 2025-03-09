@@ -127,7 +127,14 @@ def main():
         "--show", 
         action="store_true", 
         help="Show graph upon creation (creates a new window)"
-    ) 
+    )
+
+    visualiser_parser.add_argument(
+        "-n",
+        "--no-legend", 
+        action="store_true", 
+        help="Omit legend from graph"
+    )  
 
     # Extract-by-id command
     sub_parsers.add_parser("extract-by-id", parents=[extractor_parent_parser])
@@ -151,7 +158,8 @@ def main():
             genes_of_interest=args.transcripts_of_interest,
             show=args.show,
             percentage=args.percentage,
-            percentage_colour=args.colour
+            percentage_colour=args.colour,
+            no_legend=args.no_legend
         )
     
     if args.command == "extract-by-id":

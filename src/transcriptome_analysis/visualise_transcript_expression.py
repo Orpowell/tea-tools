@@ -22,7 +22,7 @@ def load_transcript_quantification(quants: str) -> dict[str, float]:
 
 
 
-def visualise_transcripts_expression(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False, percentage: float = 0.25, percentage_colour: str = "ffa500"):
+def visualise_transcripts_expression(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False, percentage: float = 0.25, percentage_colour: str = "ffa500", no_legend: bool=False):
 
     if (percentage > 1) or (percentage < 0):
         logging.error(f" percentage ({percentage}) must be between 0 and 1.")
@@ -106,9 +106,12 @@ def visualise_transcripts_expression(transcripts: str, quantification: str, grap
         i+=50
 
     # Plot figure legend
-    bottom = mpatches.Patch(color='grey', label=f'Bottom {lower*100}%')
-    top = mpatches.Patch(color=f'#{percentage_colour}', label=f'Top {percentage*100}%')
-    plt.legend(handles=[top, bottom], title="NLR Expression")
+    
+    if no_legend is False:
+        
+        bottom = mpatches.Patch(color='grey', label=f'Bottom {lower*100}%')
+        top = mpatches.Patch(color=f'#{percentage_colour}', label=f'Top {percentage*100}%')
+        plt.legend(handles=[top, bottom], title="NLR Expression")
     
     # Plot and save final figure @ 300 DPI
     plt.tight_layout()
