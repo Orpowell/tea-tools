@@ -52,11 +52,12 @@ def visualise_transcripts_expression(
 
     transcript_list = load_transcript_list(transcripts=transcripts)
 
-    for gene in genes_of_interest:
-        if gene not in transcript_list:
-            logging.error(f" {gene} is not in the list of transcripts...")
-            logging.info("Shutting down...")
-            sys.exit(1)
+    if (len(genes_of_interest) > 0) and (len(aliases) > 0):
+        for gene in genes_of_interest:
+            if gene not in transcript_list:
+                logging.error(f" {gene} is not in the list of transcripts...")
+                logging.info("Shutting down...")
+                sys.exit(1)
 
     transcript_quants = load_transcript_quantification(quants=quantification)
 
