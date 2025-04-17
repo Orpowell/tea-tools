@@ -166,7 +166,7 @@ def main():
         extract_by_id(transcripts=args.transcript_list,
                       transcriptome=args.transcriptome)
     
-    if args.command == "extract-by-threshold":
+    elif args.command == "extract-by-threshold":
 
         extract_by_expression(transcripts=args.transcript_list,
                               transcriptome=args.transcriptome,
@@ -174,7 +174,9 @@ def main():
                               top_percentage=args.percentage,
                               )
 
-    
+    else:
+        parser.print_help()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
