@@ -5,42 +5,51 @@ import csv
 import logging
 import sys
 
+
 def load_transcript_list(transcripts: str) -> list[str]:
-    
     with open(transcripts) as file:
         return [line.strip() for line in file]
 
+
 def load_transcript_quantification(quants: str) -> dict[str, float]:
-
     with open(quants) as file:
-
         reader = csv.reader(file, delimiter="\t")
 
-        next(reader)
-
-        return {row[0]:float(row[3]) for row in reader }
+        return {row[0]: float(row[1]) for row in reader}
 
 
-
-def visualise_transcripts_expression(transcripts: str, quantification: str, graph_out:str, genes_of_interest=[str], aliases=[str], show=False, percentage: float = 0.25, percentage_colour: str = "ffa500", no_legend: bool=False):
-
+def visualise_transcripts_expression(
+    transcripts: str,
+    quantification: str,
+    graph_out: str,
+    genes_of_interest=[str],
+    aliases=[str],
+    show=False,
+    percentage: float = 0.25,
+    percentage_colour: str = "ffa500",
+    no_legend: bool = False,
+):
     if (percentage > 1) or (percentage < 0):
         logging.error(f" percentage ({percentage}) must be between 0 and 1.")
         sys.exit(1)
-    
+
     if len(genes_of_interest) != len(aliases):
-        logging.error(f" alias ({len(aliases)}) and transcript-of-interest ({len(genes_of_interest)}) lists are not the same length!")
+        logging.error(
+            f" alias ({len(aliases)}) and transcript-of-interest ({len(genes_of_interest)}) lists are not the same length!"
+        )
         logging.info("Shutting down...")
         sys.exit(1)
-    
+
     if len(percentage_colour) != 6:
-        logging.error(f" hexadecimal code must contain 6 characters not {len(percentage_colour)}")
+        logging.error(
+            f" hexadecimal code must contain 6 characters not {len(percentage_colour)}"
+        )
         sys.exit(1)
-    
+
     if not percentage_colour.isalnum():
         logging.error(" hexadecimal code can only contain numbers and letters...")
         sys.exit(1)
-    
+
     transcript_list = load_transcript_list(transcripts=transcripts)
 
     for gene in genes_of_interest:
@@ -50,73 +59,75 @@ def visualise_transcripts_expression(transcripts: str, quantification: str, grap
             sys.exit(1)
 
     transcript_quants = load_transcript_quantification(quants=quantification)
-    
-    transcripts_of_interest = {k:v for k,v in transcript_quants.items() if k in transcript_list}
+
+    transcripts_of_interest = {
+        k: v for k, v in transcript_quants.items() if k in transcript_list
+    }
 
     transcript_tpms = list(transcripts_of_interest.values())
 
-    lower = (1-percentage)
+    lower = 1 - percentage
 
     lower_quartile = np.quantile(transcript_tpms, lower)
 
-    counts, bins = np.histogram(transcript_tpms, bins=150, )
+    counts, bins = np.histogram(
+        transcript_tpms,
+        bins=150,
+    )
 
     colours = []
 
     for bin in bins:
         if bin < lower_quartile:
             colours.append("grey")
-        
+
         else:
             colours.append(f"#{percentage_colour}")
 
     fig, ax = plt.subplots()
 
-    ax.bar(
-        bins[:-1], 
-        counts, 
-        width=np.diff(bins), 
-        color=colours, 
-        edgecolor='none'
-    ) 
+    ax.bar(bins[:-1], counts, width=np.diff(bins), color=colours, edgecolor="none")
 
     # graph customization
-    ax.set_xlabel('Transcripts Per Million TPM')  # Set the label for the x-axis
-    ax.set_ylabel('Frequency')  # Set the label for the y-axis
-    ax.spines['bottom'].set_position(('data', 0))
-    ax.set_xlim(0,)
-    ax.spines[['right', 'top']].set_visible(False)
-
+    ax.set_xlabel("Transcripts Per Million TPM")  # Set the label for the x-axis
+    ax.set_ylabel("Frequency")  # Set the label for the y-axis
+    ax.spines["bottom"].set_position(("data", 0))
+    ax.set_xlim(
+        0,
+    )
+    ax.spines[["right", "top"]].set_visible(False)
 
     # Annotate Transcripts of interest on histogram, using aliases if provided
     gene_names = dict(zip(genes_of_interest, genes_of_interest))
 
     if len(genes_of_interest) == len(aliases):
         gene_names = dict(zip(genes_of_interest, aliases))
-    
-    for k,v in gene_names.items():
+
+    for k, v in gene_names.items():
         if v == "_":
             gene_names[k] = k
-    
+
     i = 50
     for gene in genes_of_interest:
-
-        ax.annotate(fr'{gene_names[gene]}',
-                    xy=(transcript_quants[gene], 1), 
-                    xytext=(i, i), 
-                    textcoords='offset points',
-                    arrowprops=dict(arrowstyle='-|>', color='black'), 
-                    style='italic')
-        i+=50
+        ax.annotate(
+            rf"{gene_names[gene]}",
+            xy=(transcript_quants[gene], 1),
+            xytext=(i, i),
+            textcoords="offset points",
+            arrowprops=dict(arrowstyle="-|>", color="black"),
+            style="italic",
+        )
+        i += 50
 
     # Plot figure legend
-    
+
     if no_legend is False:
-        
-        bottom = mpatches.Patch(color='grey', label=f'Bottom {lower*100}%')
-        top = mpatches.Patch(color=f'#{percentage_colour}', label=f'Top {percentage*100}%')
+        bottom = mpatches.Patch(color="grey", label=f"Bottom {lower*100}%")
+        top = mpatches.Patch(
+            color=f"#{percentage_colour}", label=f"Top {percentage*100}%"
+        )
         plt.legend(handles=[top, bottom], title="NLR Expression")
-    
+
     # Plot and save final figure @ 300 DPI
     plt.tight_layout()
     plt.savefig(f"{graph_out}", dpi=300)
@@ -125,7 +136,7 @@ def visualise_transcripts_expression(transcripts: str, quantification: str, grap
     if show:
         plt.show()
 
-        
+
 """
 if __name__ == "__main__":
     
