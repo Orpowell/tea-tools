@@ -38,7 +38,7 @@ This data can be easily extracted from the output of quantification tools using 
 
 # Running Tea-tools
 
-Three commands are currently available using tea-tools: visualise, extract-by-id, extract-by-threshold. All commands can be run using the following command:
+One commands is currently available using tea-tools: visualise. All commands can be run using the following command:
 
     tea-tools <command> ...
 
