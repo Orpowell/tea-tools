@@ -6,11 +6,6 @@ import logging
 import sys
 
 
-def load_transcript_list(transcripts: str) -> list[str]:
-    with open(transcripts) as file:
-        return [line.strip() for line in file]
-
-
 def load_transcript_quantification(quants: str) -> dict[str, float]:
     with open(quants) as file:
         reader = csv.reader(file, delimiter="\t")
@@ -19,7 +14,6 @@ def load_transcript_quantification(quants: str) -> dict[str, float]:
 
 
 def visualise_transcripts_expression(
-    transcripts: str,
     quantification: str,
     graph_out: str,
     genes_of_interest=[str],
@@ -49,9 +43,10 @@ def visualise_transcripts_expression(
     if not percentage_colour.isalnum():
         logging.error(" hexadecimal code can only contain numbers and letters...")
         sys.exit(1)
-
-    transcript_list = load_transcript_list(transcripts=transcripts)
-
+    
+    transcript_quants = load_transcript_quantification(quants=quantification)
+    transcript_list = list(transcript_quants.keys())
+	
     if (len(genes_of_interest) > 0) and (len(aliases) > 0):
         for gene in genes_of_interest:
             if gene not in transcript_list:
@@ -59,13 +54,7 @@ def visualise_transcripts_expression(
                 logging.info("Shutting down...")
                 sys.exit(1)
 
-    transcript_quants = load_transcript_quantification(quants=quantification)
-
-    transcripts_of_interest = {
-        k: v for k, v in transcript_quants.items() if k in transcript_list
-    }
-
-    transcript_tpms = list(transcripts_of_interest.values())
+    transcript_tpms = list(transcript_quants.values())
 
     lower = 1 - percentage
 
@@ -73,7 +62,7 @@ def visualise_transcripts_expression(
 
     counts, bins = np.histogram(
         transcript_tpms,
-        bins=150,
+        bins=50,
     )
 
     colours = []
@@ -87,7 +76,7 @@ def visualise_transcripts_expression(
 
     fig, ax = plt.subplots()
 
-    ax.bar(bins[:-1], counts, width=np.diff(bins), color=colours, edgecolor="none")
+    ax.bar(bins[:-1], counts, width=np.diff(bins), color=colours, edgecolor="none", align="edge")
 
     # graph customization
     ax.set_xlabel("Transcripts Per Million TPM")  # Set the label for the x-axis
@@ -107,18 +96,17 @@ def visualise_transcripts_expression(
     for k, v in gene_names.items():
         if v == "_":
             gene_names[k] = k
-
-    i = 50
+    
+    i=0
     for gene in genes_of_interest:
         ax.annotate(
             rf"{gene_names[gene]}",
-            xy=(transcript_quants[gene], 1),
-            xytext=(i, i),
-            textcoords="offset points",
+            xy=((transcript_quants[gene], 1)),
+            xytext=( (transcript_quants[gene], (counts.max() / 2+i))),
             arrowprops=dict(arrowstyle="-|>", color="black"),
             style="italic",
         )
-        i += 50
+        i+=2
 
     # Plot figure legend
 
@@ -127,7 +115,7 @@ def visualise_transcripts_expression(
         top = mpatches.Patch(
             color=f"#{percentage_colour}", label=f"Top {percentage*100}%"
         )
-        plt.legend(handles=[top, bottom], title="NLR Expression")
+        plt.legend(handles=[top, bottom], title="Percentage Expression")
 
     # Plot and save final figure @ 300 DPI
     plt.tight_layout()
@@ -136,39 +124,3 @@ def visualise_transcripts_expression(
     # Show if toggled on
     if show:
         plt.show()
-
-
-"""
-if __name__ == "__main__":
-    
-
-    #visualise_nlr_transcripts(transcripts=nlr_transcripts, quantification=quantification, gene_name="Yr28", graph_out="Yr28_expression.png", gene_quant=10.195096)
-    #visualise_nlr_transcripts(transcripts=nlr_transcripts, quantification=quantification, gene_name="Sr46", graph_out="Sr46_TRINITY_DN1954_c0_g1_i12_expression.png", gene_quant=15.449350)
-
-    TOWWC054
-    transcripts = "/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TOWWC054_NLR_trancripts.txt"
-    quantification = "/home/powellor/Documents/projects/r_gene_expression_david/analysis/TOWWC054_quant/TOWWC054_salmon_out/quant.sf"
-    visualise_nlr_transcripts(transcripts=transcripts, 
-                              quantification=quantification, 
-                              gene_name="SrTA10187", 
-                              graph_out="SrTA10187_expression.png",
-                              gene_quant=13.496783)
-
-
-    
-    #TA10171
-    visualise_nlr_transcripts(transcripts = "/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TA10171_NLR_trancripts.txt", 
-                              quantification="/home/powellor/Documents/projects/r_gene_expression_david/analysis/TA10171/TA10171_quantification/quant.sf", 
-                              graph_out="TA10171_expression.test.png",
-                              genes_of_interest=["TRINITY_DN2103_c0_g2_i7","TRINITY_DN2103_c0_g3_i2"],
-                              )
-    
-    
-    
-    #TOWWC0107
-    visualise_nlr_transcripts(transcripts="/home/powellor/Documents/projects/r_gene_expression_david/scripts/nlr_quant_scripts/TOWWC0107_NLR_trancripts.txt", 
-                            quantification="/home/powellor/Documents/projects/r_gene_expression_david/analysis/TOWWC0107/TOWWC0107_quantification/quant.sf", 
-                            graph_out="TOWWC0107_candidates.png", 
-                            genes_of_interest=["TRINITY_DN1105_c0_g1_i7", "TRINITY_DN1105_c0_g1_i6"],
-                            )
-    """

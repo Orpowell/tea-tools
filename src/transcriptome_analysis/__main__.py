@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 from .__init__ import __version__
-from .visualise_transcript_expression import visualise_transcripts_expression
+from .nu_visualise_transcript_expression import visualise_transcripts_expression
 from .extract_transcripts import extract_by_expression, extract_by_id
 
 def is_valid_file(parser, arg):
@@ -31,21 +31,12 @@ def main():
     extractor_parent_parser = argparse.ArgumentParser(add_help=False)
 
     extractor_parent_parser.add_argument(
-        '-l',
-        '--transcript-list',
-        metavar='\b', 
-        type=lambda x: is_valid_file(parser, x),
-        help="List of transcripts",
-        required=True,
-    )
-
-    extractor_parent_parser.add_argument(
         '-t',
         '--transcriptome',
         metavar='\b', 
         type=lambda x: is_valid_file(parser, x),
         help="Transcriptome",
-        required=True,
+        required=True
     )
 
     # Expression related parameters
@@ -55,10 +46,10 @@ def main():
         "-p",
         "--percentage",
         metavar='\b',
-        default=0.25,
+        default=25,
         type=float,
-        required=True,
-        help="Fraction of top percent coloured between 0.0-1.0 (default: 0.25)"
+        required=False,
+        help="Fraction of top percent coloured between 1.0-100.0 (default: 25)"
     )
 
     quantification_parent_parser.add_argument(
@@ -80,7 +71,7 @@ def main():
         metavar='\b', 
         type=lambda x: is_valid_file(parser, x),
         help="List of transcripts",
-        required=True,
+        required=False,
     )
 
     visualiser_parser.add_argument(
@@ -134,9 +125,10 @@ def main():
     visualiser_parser.add_argument(
         "-n",
         "--no-legend", 
-        action="store_true", 
+        action="store_true",
+        default=False, 
         help="Omit legend from graph"
-    )  
+    )
 
     # Extract-by-id command
     sub_parsers.add_parser("extract-by-id", parents=[extractor_parent_parser])
@@ -153,7 +145,6 @@ def main():
     if args.command == "visualise":
 
         visualise_transcripts_expression(
-            transcripts=args.transcript_list,
             quantification=args.quantification,
             graph_out=args.output,
             aliases=args.aliases,
