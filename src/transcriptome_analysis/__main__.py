@@ -2,8 +2,7 @@ import argparse
 import os
 import sys
 from .__init__ import __version__
-from .nu_visualise_transcript_expression import visualise_transcripts_expression
-from .extract_transcripts import extract_by_expression, extract_by_id
+from .visualise_transcript_expression import visualise_transcripts_expression
 
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
@@ -130,12 +129,6 @@ def main():
         help="Omit legend from graph"
     )
 
-    # Extract-by-id command
-    sub_parsers.add_parser("extract-by-id", parents=[extractor_parent_parser])
-
-    # Extract-by-threshold command
-    sub_parsers.add_parser("extract-by-threshold", parents=[extractor_parent_parser, quantification_parent_parser])
-
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -154,19 +147,7 @@ def main():
             percentage_colour=args.colour,
             no_legend=args.no_legend
         )
-    
-    elif args.command == "extract-by-id":
-        extract_by_id(transcripts=args.transcript_list,
-                      transcriptome=args.transcriptome)
-    
-    elif args.command == "extract-by-threshold":
-
-        extract_by_expression(transcripts=args.transcript_list,
-                              transcriptome=args.transcriptome,
-                              quantification=args.quantification,
-                              top_percentage=args.percentage,
-                              )
-
+        
     else:
         parser.print_help()
         sys.exit(1)

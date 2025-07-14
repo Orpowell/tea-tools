@@ -1,10 +1,12 @@
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import seaborn as sns
 import csv
 import logging
 import sys
-
+from matplotlib.colors import ListedColormap
 
 def load_transcript_quantification(quants: str) -> dict[str, float]:
     with open(quants) as file:
@@ -19,11 +21,12 @@ def visualise_transcripts_expression(
     genes_of_interest=[str],
     aliases=[str],
     show=False,
-    percentage: float = 0.25,
+    percentage: float = 25.0,
     percentage_colour: str = "ffa500",
     no_legend: bool = False,
+    svg: bool = False
 ):
-    if (percentage > 1) or (percentage < 0):
+    if (percentage > 100) or (percentage < 0):
         logging.error(f" percentage ({percentage}) must be between 0 and 1.")
         sys.exit(1)
 
@@ -55,37 +58,25 @@ def visualise_transcripts_expression(
                 sys.exit(1)
 
     transcript_tpms = list(transcript_quants.values())
-
-    lower = 1 - percentage
-
-    lower_quartile = np.quantile(transcript_tpms, lower)
-
-    counts, bins = np.histogram(
-        transcript_tpms,
-        bins=50,
-    )
-
-    colours = []
-
-    for bin in bins:
-        if bin < lower_quartile:
-            colours.append("grey")
-
-        else:
-            colours.append(f"#{percentage_colour}")
-
-    fig, ax = plt.subplots()
-
-    ax.bar(bins[:-1], counts, width=np.diff(bins), color=colours, edgecolor="none", align="edge")
-
-    # graph customization
-    ax.set_xlabel("Transcripts Per Million TPM")  # Set the label for the x-axis
-    ax.set_ylabel("Frequency")  # Set the label for the y-axis
-    ax.spines["bottom"].set_position(("data", 0))
-    ax.set_xlim(
-        0,
-    )
-    ax.spines[["right", "top"]].set_visible(False)
+    
+    ax = sns.swarmplot(transcript_tpms, orient="h", color='red', size=3)
+    
+    cmap = ListedColormap(['grey', f'#{percentage_colour}'])
+    
+    lower = 100-percentage
+    
+    for col in ax.collections:
+    	x = col.get_offsets()[:,0]
+    	perc = np.percentile(x, [lower])
+    	col.set_cmap(cmap)
+    	col.set_array(np.digitize(x, perc))
+    
+    sns.violinplot(transcript_tpms, orient="h", inner=None, color='white', linecolor='black', cut=0, density_norm='count')
+    ax.set_xlabel("Transcripts Per Million (tpm)")  # Set the label for the x-axis
+    ax.spines[["right", "top", "left"]].set_visible(False)
+    ax.yaxis.set_ticklabels([])
+    ax.yaxis.set_major_formatter(plt.NullFormatter())
+    plt.yticks([])
 
     # Annotate Transcripts of interest on histogram, using aliases if provided
     gene_names = dict(zip(genes_of_interest, genes_of_interest))
@@ -97,26 +88,28 @@ def visualise_transcripts_expression(
         if v == "_":
             gene_names[k] = k
     
-    i=0
+    x,y = np.array(ax.collections[0].get_offsets()).T
+    data_coords = dict(zip(x,y)) 
+    
     for gene in genes_of_interest:
-        ax.annotate(
-            rf"{gene_names[gene]}",
-            xy=((transcript_quants[gene], 1)),
-            xytext=( (transcript_quants[gene], (counts.max() / 2+i))),
-            arrowprops=dict(arrowstyle="-|>", color="black"),
-            style="italic",
-        )
-        i+=2
+    	x = transcript_quants[gene]
+    	ax.annotate(
+			rf"{gene_names[gene]}",
+            xy=((x, data_coords[x])),
+    		xytext=((round(x), random.uniform(0.2,0.4))),
+	    	arrowprops=dict(arrowstyle="-|>", color="black"),
+        	style="italic",
+        	)
 
     # Plot figure legend
 
     if no_legend is False:
-        bottom = mpatches.Patch(color="grey", label=f"Bottom {lower*100}%")
+        bottom = mpatches.Patch(color="grey", label=f"Bottom {lower}%")
         top = mpatches.Patch(
-            color=f"#{percentage_colour}", label=f"Top {percentage*100}%"
+            color=f"#{percentage_colour}", label=f"Top {percentage}%"
         )
         plt.legend(handles=[top, bottom], title="Percentage Expression")
-
+    	
     # Plot and save final figure @ 300 DPI
     plt.tight_layout()
     plt.savefig(f"{graph_out}", dpi=300)
